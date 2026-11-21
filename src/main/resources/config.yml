@@ -1,0 +1,21 @@
+# Abstand zwischen zwei Runden (Sekunden)
+interval-seconds: 180
+# Wie lange die Blöcke verschwunden bleiben (Sekunden)
+duration-seconds: 20
+# Vorwarnung vor jeder Runde (Sekunden, 0 = aus)
+warning-seconds: 10
+# Max. Blöcke, die pro Tick entfernt/wiederhergestellt werden (gegen Lag)
+blocks-per-tick: 5000
+# Truhen, Öfen, Schilder usw. überspringen, damit kein Inhalt verloren geht
+skip-block-entities: true
+# Betroffene Welten (leer = alle)
+worlds: []
+# Diese Blöcke verschwinden nie
+excluded-materials:
+  - BEDROCK
+  - END_PORTAL
+  - END_PORTAL_FRAME
+  - NETHER_PORTAL
+  - END_GATEWAY
+  - SPAWNER
+  - REINFORCED_DEEPSLATE

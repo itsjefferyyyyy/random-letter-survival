@@ -1,0 +1,16 @@
+name: RandomLetterSurvival
+version: '${version}'
+main: dev.randomletter.RandomLetterPlugin
+api-version: '26.3'
+description: Alle paar Minuten verschwinden alle Blöcke eines zufälligen Buchstabens im Chunk der Spieler.
+libraries:
+  - org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}
+commands:
+  rls:
+    description: Steuert Random Letter Survival
+    usage: /rls <start|stop|trigger [Buchstabe]|reload>
+    permission: randomletter.admin
+permissions:
+  randomletter.admin:
+    description: Erlaubt /rls
+    default: op
