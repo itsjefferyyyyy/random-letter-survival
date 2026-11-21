@@ -1,6 +1,8 @@
 # Random Letter Survival
 
-Paper-Plugin: Alle 3 Minuten wird ein zufälliger Buchstabe gezogen. Alle Blöcke, deren englische ID mit diesem Buchstaben beginnt (z.B. `S` → Stone, Sand, Spruce Log …), verschwinden für 20 Sekunden – aber nur in dem Chunk, in dem ein Spieler steht.
+Paper-Plugin: Alle 3 Minuten wird ein zufälliger Buchstabe gezogen. Alle Blöcke, deren englischer Grundname mit diesem Buchstaben beginnt (z.B. `S` → Stone, Sand, Spruce Log …), verschwinden für 10 Sekunden – aber nur in dem Chunk, in dem ein Spieler steht.
+
+Varianten zählen zum Grundblock: Grass Block → **D**irt, Polished Andesite → **A**ndesite, Mossy Cobblestone → **C**obblestone, Deepslate Iron Ore → **I**ron Ore. Gezogen werden nur Buchstaben, deren Blöcke in den Chunks der Spieler auch vorkommen.
 
 ## Voraussetzungen
 
@@ -43,12 +45,13 @@ Beim ersten Start wird `plugins/RandomLetterSurvival/config.yml` angelegt:
 | Einstellung | Standard | Bedeutung |
 |---|---|---|
 | `interval-seconds` | `180` | Abstand zwischen zwei Runden |
-| `duration-seconds` | `20` | Wie lange die Blöcke weg sind |
+| `duration-seconds` | `10` | Wie lange die Blöcke weg sind |
 | `warning-seconds` | `10` | Vorwarnung im Chat (`0` = aus) |
 | `blocks-per-tick` | `5000` | Wie viele Blöcke pro Tick entfernt/zurückgesetzt werden. Kleiner = weniger Lag, aber langsameres Verschwinden |
 | `skip-block-entities` | `true` | Truhen, Öfen, Schilder usw. verschwinden nicht (kein Item-Verlust) |
 | `worlds` | `[]` | Nur diese Welten, z.B. `[world, world_nether]`. Leer = alle |
 | `excluded-materials` | Bedrock, Portale, Spawner … | Diese Blöcke verschwinden nie |
+| `letter-aliases` | – | Eigene Sonderfälle, z.B. `MUD: DIRT` → Mud zählt als **D** |
 
 Nach dem Ändern im Spiel `/rls reload` ausführen – ein Neustart ist nicht nötig.
 
@@ -74,7 +77,7 @@ Einem Nicht-OP die Rechte geben (z.B. mit LuckPerms):
 
 - Steht ein Spieler beim Zurücksetzen dort, wo ein Block hinkommen würde, wird dieser Block **nicht** zurückgesetzt und bleibt weg.
 - Blöcke, die Spieler in der Zwischenzeit in die Lücken setzen, werden nicht überschrieben.
-- Beim normalen Stoppen des Servers werden alle verschwundenen Blöcke sofort zurückgesetzt. **Stürzt der Server** während der 20 Sekunden ab, bleiben die Blöcke weg.
+- Beim normalen Stoppen des Servers werden alle verschwundenen Blöcke sofort zurückgesetzt. **Stürzt der Server** während der 10 Sekunden ab, bleiben die Blöcke weg.
 - Kein `/reload` des ganzen Servers verwenden – lieber den Server neu starten.
 
 ## Probleme

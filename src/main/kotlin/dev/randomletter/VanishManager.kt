@@ -9,6 +9,7 @@ import org.bukkit.block.Block
 import org.bukkit.block.TileState
 import org.bukkit.block.data.BlockData
 import org.bukkit.scheduler.BukkitTask
+import java.util.EnumSet
 import kotlin.math.floor
 
 /**
@@ -18,7 +19,14 @@ import kotlin.math.floor
  */
 class VanishManager(private val plugin: RandomLetterPlugin) {
 
-    private class ChunkScan(val world: World, val chunkX: Int, val chunkZ: Int, val snapshot: ChunkSnapshot)
+    private class ChunkScan(
+        val world: World,
+        val chunkX: Int,
+        val chunkZ: Int,
+        val minY: Int,
+        val maxY: Int,
+        val snapshot: ChunkSnapshot,
+    )
     private class Hit(val world: World, val x: Int, val y: Int, val z: Int)
 
     /** Entfernte Blöcke mit ihrem Originalzustand, in Entfern-Reihenfolge. */
@@ -33,11 +41,15 @@ class VanishManager(private val plugin: RandomLetterPlugin) {
     var busy = false
         private set
 
-    fun vanish(letter: Char): Boolean {
+    /**
+     * Startet eine Runde. Ohne [forced] wird der Buchstabe anhand der Blöcke gewählt,
+     * die in den Chunks der Spieler wirklich vorkommen. [onLetterChosen] wird auf dem
+     * Main-Thread aufgerufen, sobald der Buchstabe feststeht.
+     */
+    fun vanish(forced: Char?, onLetterChosen: (Char) -> Unit): Boolean {
         if (busy) return false
         val settings = plugin.settings
-        val materials = plugin.picker.materialsFor(letter)
-        if (materials.isEmpty()) return false
+        val picker = plugin.picker
 
         // Main-Thread: betroffene Chunks einsammeln (doppelte nur einmal) und Snapshots ziehen.
         val scans = Bukkit.getOnlinePlayers()
@@ -46,28 +58,59 @@ class VanishManager(private val plugin: RandomLetterPlugin) {
             .filter { settings.worlds.isEmpty() || it.world.name in settings.worlds }
             .map { it.location.chunk }
             .distinct()
-            .map { ChunkScan(it.world, it.x, it.z, it.getChunkSnapshot(false, false, false)) }
+            .map {
+                ChunkScan(
+                    it.world, it.x, it.z, it.world.minHeight, it.world.maxHeight,
+                    it.getChunkSnapshot(false, false, false),
+                )
+            }
             .toList()
         if (scans.isEmpty()) return false
 
         busy = true
         Bukkit.getScheduler().runTaskAsynchronously(plugin, Runnable {
-            val hits = ArrayList<Hit>()
-            for (scan in scans) {
-                val minY = scan.world.minHeight
-                val maxY = scan.world.maxHeight
-                val baseX = scan.chunkX shl 4
-                val baseZ = scan.chunkZ shl 4
-                for (x in 0 until 16) for (z in 0 until 16) for (y in minY until maxY) {
-                    if (scan.snapshot.getBlockType(x, y, z) in materials) {
-                        hits += Hit(scan.world, baseX + x, y, baseZ + z)
-                    }
-                }
-            }
+            // Durchgang 1 (nur bei Zufall): welche Materialien kommen überhaupt vor?
+            val letter = forced ?: picker.pickFrom(presentMaterials(scans))
+            val hits = if (letter != null) findHits(scans, picker.materialsFor(letter)) else emptyList()
+
             if (!plugin.isEnabled) return@Runnable
-            Bukkit.getScheduler().runTask(plugin, Runnable { startRemoving(hits, materials) })
+            Bukkit.getScheduler().runTask(plugin, Runnable {
+                if (letter == null) {
+                    plugin.logger.info("Keine passenden Blöcke in den Chunks der Spieler – Runde übersprungen.")
+                    busy = false
+                    return@Runnable
+                }
+                onLetterChosen(letter)
+                startRemoving(hits, picker.materialsFor(letter))
+            })
         })
         return true
+    }
+
+    private fun presentMaterials(scans: List<ChunkScan>): Set<Material> {
+        val present = EnumSet.noneOf(Material::class.java)
+        forEachBlock(scans) { _, _, _, _, type -> present += type }
+        return present
+    }
+
+    // Durchgang 2: Positionen aller Blöcke des gewählten Buchstabens.
+    private fun findHits(scans: List<ChunkScan>, materials: Set<Material>): List<Hit> {
+        val hits = ArrayList<Hit>()
+        forEachBlock(scans) { world, x, y, z, type -> if (type in materials) hits += Hit(world, x, y, z) }
+        return hits
+    }
+
+    private inline fun forEachBlock(
+        scans: List<ChunkScan>,
+        action: (world: World, x: Int, y: Int, z: Int, type: Material) -> Unit,
+    ) {
+        for (scan in scans) {
+            val baseX = scan.chunkX shl 4
+            val baseZ = scan.chunkZ shl 4
+            for (x in 0 until 16) for (z in 0 until 16) for (y in scan.minY until scan.maxY) {
+                action(scan.world, baseX + x, y, baseZ + z, scan.snapshot.getBlockType(x, y, z))
+            }
+        }
     }
 
     private fun startRemoving(hits: List<Hit>, materials: Set<Material>) {

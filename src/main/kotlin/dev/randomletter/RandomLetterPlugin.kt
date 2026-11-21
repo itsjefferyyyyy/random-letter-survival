@@ -41,7 +41,7 @@ class RandomLetterPlugin : JavaPlugin() {
     fun loadSettings() {
         reloadConfig()
         settings = PluginConfig.from(config, logger)
-        picker = LetterPicker.fromRegistry(settings.excludedMaterials)
+        picker = LetterPicker.fromRegistry(settings.excludedMaterials, settings.letterAliases)
     }
 
     fun startTimer(): Boolean {
@@ -73,12 +73,13 @@ class RandomLetterPlugin : JavaPlugin() {
         }
     }
 
-    /** Startet eine Runde. Gibt den Buchstaben zurück oder null, wenn nichts passiert ist. */
-    fun runRound(forced: Char? = null): Char? {
-        if (vanishManager.busy) return null
-        val letter = forced?.uppercaseChar() ?: picker.pick()
-        if (!vanishManager.vanish(letter)) return null
+    /** Startet eine Runde. Gibt false zurück, wenn keine starten konnte. */
+    fun runRound(forced: Char? = null): Boolean {
+        if (vanishManager.busy) return false
+        return vanishManager.vanish(forced?.uppercaseChar(), ::announce)
+    }
 
+    private fun announce(letter: Char) {
         val title = Title.title(
             Component.text(letter.toString(), NamedTextColor.RED),
             Component.text("Alle Blöcke mit $letter verschwinden für ${settings.durationSeconds}s!", NamedTextColor.GOLD),
@@ -90,7 +91,6 @@ class RandomLetterPlugin : JavaPlugin() {
                 .append(Component.text(letter.toString(), NamedTextColor.RED))
                 .append(Component.text(" – alle Blöcke damit verschwinden für ${settings.durationSeconds} Sekunden!", NamedTextColor.GOLD))
         )
-        return letter
     }
 
     fun onRoundFinished() {

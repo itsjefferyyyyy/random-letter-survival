@@ -1,7 +1,7 @@
 # Abstand zwischen zwei Runden (Sekunden)
 interval-seconds: 180
 # Wie lange die Blöcke verschwunden bleiben (Sekunden)
-duration-seconds: 20
+duration-seconds: 10
 # Vorwarnung vor jeder Runde (Sekunden, 0 = aus)
 warning-seconds: 10
 # Max. Blöcke, die pro Tick entfernt/wiederhergestellt werden (gegen Lag)
@@ -19,3 +19,8 @@ excluded-materials:
   - END_GATEWAY
   - SPAWNER
   - REINFORCED_DEEPSLATE
+# Eigene Sonderfälle für den Buchstaben: Block-ID → Grundname.
+# Standard schon eingebaut: GRASS_BLOCK, PODZOL, MYCELIUM, ROOTED_DIRT, DIRT_PATH, FARMLAND → DIRT.
+# Varianten wie POLISHED_ANDESITE → ANDESITE oder DEEPSLATE_IRON_ORE → IRON_ORE werden automatisch erkannt.
+letter-aliases:
+  # MUD: DIRT

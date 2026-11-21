@@ -19,8 +19,7 @@ class RlsCommand(private val plugin: RandomLetterPlugin) : TabExecutor {
                     sender.reply("Ungültiger Buchstabe: $arg", NamedTextColor.RED)
                     return true
                 }
-                val letter = plugin.runRound(forced)
-                if (letter == null) sender.reply("Runde konnte nicht starten (läuft schon eine oder keine Spieler/Chunks).", NamedTextColor.RED)
+                if (!plugin.runRound(forced)) sender.reply("Runde konnte nicht starten (läuft schon eine oder keine Spieler/Chunks).", NamedTextColor.RED)
             }
             "reload" -> {
                 plugin.loadSettings()

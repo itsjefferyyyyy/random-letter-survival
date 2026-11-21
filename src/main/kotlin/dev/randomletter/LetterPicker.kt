@@ -5,17 +5,18 @@ import java.util.EnumSet
 import kotlin.random.Random
 
 /**
- * Gruppiert Block-Materialien nach dem Anfangsbuchstaben ihrer englischen ID
- * und zieht einen Buchstaben, gewichtet nach der Anzahl der Materialien.
+ * Gruppiert Block-Materialien nach dem Anfangsbuchstaben ihres Grundnamens
+ * (siehe [BaseNames], z.B. GRASS_BLOCK → DIRT → D) und zieht einen Buchstaben, gewichtet nach den Materialien, die wirklich vorkommen.
  */
-class LetterPicker(materials: Collection<Material>) {
+class LetterPicker(
+    materials: Collection<Material>,
+    aliases: Map<String, String> = BaseNames.DEFAULT_ALIASES,
+) {
 
     private val byLetter: Map<Char, Set<Material>> = materials
-        .groupBy { it.name.first().uppercaseChar() }
+        .groupBy { BaseNames.letterOf(it.name, aliases) }
         .filterKeys { it in 'A'..'Z' }
         .mapValues { (_, list) -> EnumSet.copyOf(list) }
-
-    private val totalWeight = byLetter.values.sumOf { it.size }
 
     /** Alle Buchstaben, für die es mindestens ein Material gibt. */
     val letters: Set<Char> get() = byLetter.keys
@@ -23,11 +24,19 @@ class LetterPicker(materials: Collection<Material>) {
     fun materialsFor(letter: Char): Set<Material> =
         byLetter[letter.uppercaseChar()] ?: emptySet()
 
-    fun pick(random: Random = Random.Default): Char {
-        check(totalWeight > 0) { "Keine Materialien verfügbar" }
-        var roll = random.nextInt(totalWeight)
-        for ((letter, set) in byLetter) {
-            roll -= set.size
+    /**
+     * Zieht einen Buchstaben aus den Materialien, die tatsächlich vorkommen.
+     * Gewicht = Anzahl verschiedener vorhandener Materialien mit diesem Buchstaben
+     * (z.B. Stone + Sand + Spruce Log vorhanden → S hat Gewicht 3).
+     * Gibt null zurück, wenn kein erlaubtes Material vorkommt.
+     */
+    fun pickFrom(present: Set<Material>, random: Random = Random.Default): Char? {
+        val weights = byLetter.mapValues { (_, set) -> set.count { it in present } }.filterValues { it > 0 }
+        val total = weights.values.sum()
+        if (total == 0) return null
+        var roll = random.nextInt(total)
+        for ((letter, weight) in weights) {
+            roll -= weight
             if (roll < 0) return letter
         }
         error("unreachable")
@@ -35,8 +44,9 @@ class LetterPicker(materials: Collection<Material>) {
 
     companion object {
         @Suppress("DEPRECATION")
-        fun fromRegistry(excluded: Set<Material>): LetterPicker = LetterPicker(
-            Material.entries.filter { it.isBlock && !it.isAir && !it.isLegacy && it !in excluded }
+        fun fromRegistry(excluded: Set<Material>, aliases: Map<String, String>): LetterPicker = LetterPicker(
+            Material.entries.filter { it.isBlock && !it.isAir && !it.isLegacy && it !in excluded },
+            aliases,
         )
     }
 }
